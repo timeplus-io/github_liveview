@@ -1,5 +1,5 @@
 import streamlit as st
-import time,os,json
+import time,datetime,pytz,os,json
 from rx import operators as ops
 import pandas as pd
 import altair as alt
@@ -33,6 +33,11 @@ def show_table_for_query(sql,table_name,row_cnt):
         data = {}
         for i, f in enumerate(col):
             data[f] = row[i]
+            #hack show first column as more friendly datetime diff
+            if(i==0):
+                minutes=divmod((pytz.utc.localize(datetime.datetime.utcnow())-row[i]).total_seconds(),60)
+                data[f]=f"{int(minutes[0])} min {int(minutes[1])} sec ago"
+
         df = pd.DataFrame([data], columns=col)
         if name not in st.session_state:
             st.session_state[name] = st.table(df)
@@ -77,9 +82,9 @@ FROM table(github_events) WHERE type='CreateEvent' GROUP BY branch ORDER BY cnt 
 
     st.header('Hot repos')
     sql="""SELECT window_end as time,repo, group_array(distinct actor) AS followers
-FROM hop(github_events,1m,30m) 
+FROM hop(github_events,5m,30m) 
 WHERE type ='WatchEvent' GROUP BY window_end,repo HAVING length(followers)>1 
-emit last 4h
+emit last 30m
 """
     show_table_for_query(sql,'star_table',8)
 
