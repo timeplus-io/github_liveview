@@ -63,12 +63,16 @@ with col1:
     st.header('New repos')
     show_table_for_query("select created_at,actor,repo,json_extract_string(payload,'master_branch') AS branch from github_events WHERE type='CreateEvent'",'new_repo',4)
     st.header('Default branch for new repos')
+
     sql="""SELECT json_extract_string(payload,'master_branch') AS branch,count(*) AS cnt
 FROM table(github_events) WHERE type='CreateEvent' GROUP BY branch ORDER BY cnt DESC LIMIT 3"""
     result=Query().execSQL(sql,10000)
     col = [h["name"] for h in result["header"]]
     df = pd.DataFrame(result["data"], columns=col)
-    st.table(df)
+    base = alt.Chart(df).encode(theta=alt.Theta('cnt:Q',stack=True),color=alt.Color('branch:N',legend=None))
+    pie=base.mark_arc(outerRadius=120)
+    text = base.mark_text(radius=150, size=20).encode(text='branch:N')
+    st.altair_chart(pie+text, use_container_width=False)
 
 with col2:
     st.header('Hot repos')
