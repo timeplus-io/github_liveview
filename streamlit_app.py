@@ -47,7 +47,7 @@ Env.setCurrent(env)
 
 col1, col2, col3 = st.columns([3,3,1])
 
-with col1:#st.container():
+with col1:
     st.header('New events over time')
     sql="select window_end as time,count() as count from tumble(table(github_events),10m) group by window_end emit last 2d"
     query = Query().sql(sql).create()
@@ -70,12 +70,12 @@ with col1:#st.container():
     )
     query.cancel().delete()
 
-with col2:#st.container():
+with col2:
     st.header('Hot repos')
     sql="""SELECT window_end as time,repo, group_array(distinct actor) AS followers
-FROM hop(github_events,1m,10m) 
+FROM hop(github_events,1m,30m) 
 WHERE type ='WatchEvent' GROUP BY window_end,repo HAVING length(followers)>1 
-emit last 1h
+emit last 4h
 """
     query = Query().sql(sql).create()
     col = [h["name"] for h in query.header()]
@@ -89,7 +89,7 @@ emit last 1h
         else:
             st.session_state.star_table.add_rows(df)
     stopper = Stopper()
-    query.get_result_stream(stopper).pipe(ops.take(6)).subscribe(
+    query.get_result_stream(stopper).pipe(ops.take(16)).subscribe(
         on_next=lambda i: update_row2(i),
         on_error=lambda e: print(f"error {e}"),
         on_completed=lambda: stopper.stop(),
