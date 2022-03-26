@@ -42,29 +42,50 @@ env = (
 )
 Env.setCurrent(env)
 
-with st.container():
-    sql="select count(*) from table(github_events)"
+# show a changing single value for total events
+with st.empty():
+    #show the initial events first
+    sql="select count(*) from table(github_events) emit periodic 1s"
     cnt=Query().execSQL(sql)["data"][0][0]
     st.metric(label="Github events", value="{:,}".format(cnt))
+    st.session_state.last_cnt=cnt
 
-    sql=f"select now(), {cnt}+count(*) as events from github_events"
+    #create a streaming query to update counts
+    sql=f"select {cnt}+count(*) as events from github_events"
+    query = Query().sql(sql).create()
+    def update_row(row):
+        delta=row[0]-st.session_state.last_cnt
+        if (delta>0):
+            st.metric(label="Github events", value="{:,}".format(row[0]), delta=row[0]-st.session_state.last_cnt)
+            st.session_state.last_cnt=row[0]
+    stopper = Stopper()
+    query.get_result_stream(stopper).pipe(ops.take(10)).subscribe(
+        on_next=lambda i: update_row(i),
+        on_error=lambda e: print(f"error {e}"),
+        on_completed=lambda: stopper.stop(),
+    )
+    query.cancel().delete()
+
+with st.container():
+    sql="""SELECT window_end as time,repo, group_array(distinct actor) AS watchers
+FROM hop(github_events,1m,10m) 
+WHERE type ='WatchEvent' GROUP BY window_end,repo HAVING length(watchers)>1 
+emit last 1h
+"""
     query = Query().sql(sql).create()
     col = [h["name"] for h in query.header()]
-    def update_row(row):
+    def update_row2(row):
         data = {}
         for i, f in enumerate(col):
             data[f] = row[i]
-            if(i>0):
-                data[f] = "{:,}".format(row[i])
         df = pd.DataFrame([data], columns=col)
-        if "cnt_table" not in st.session_state:
-            query_result_table = st.table(df)
-            st.session_state["cnt_table"] = query_result_table
+        if "star_table" not in st.session_state:
+            st.session_state["star_table"] = st.table(df)
         else:
-            st.session_state.cnt_table.add_rows(df)
+            st.session_state.star_table.add_rows(df)
     stopper = Stopper()
     query.get_result_stream(stopper).pipe(ops.take(6)).subscribe(
-        on_next=lambda i: update_row(i),
+        on_next=lambda i: update_row2(i),
         on_error=lambda e: print(f"error {e}"),
         on_completed=lambda: stopper.stop(),
     )
