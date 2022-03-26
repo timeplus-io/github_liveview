@@ -42,6 +42,27 @@ env = (
 )
 Env.setCurrent(env)
 
+# show event count line chart
+with st.container():
+    sql="select window_end as time,count() as count from tumble(table(github_events),1h) group by window_end emit last 2d"
+    query = Query().sql(sql).create()
+    col = ['count']
+    def update_row0(row,name):
+        print(row[0])
+        data = row[1]
+        df = [data] #pd.DataFrame([data], columns=col)
+        if name not in st.session_state:
+            st.session_state[name] = st.line_chart(df)
+        else:
+            st.session_state[name].add_rows(df)
+    stopper = Stopper()
+    query.get_result_stream(stopper).pipe(ops.take(6)).subscribe(
+        on_next=lambda i: update_row0(i,"linechart_cnt"),
+        on_error=lambda e: print(f"error {e}"),
+        on_completed=lambda: stopper.stop(),
+    )
+    query.cancel().delete()
+
 # show a changing single value for total events
 with st.empty():
     #show the initial events first
@@ -59,7 +80,7 @@ with st.empty():
             st.metric(label="Github events", value="{:,}".format(row[0]), delta=row[0]-st.session_state.last_cnt)
             st.session_state.last_cnt=row[0]
     stopper = Stopper()
-    query.get_result_stream(stopper).pipe(ops.take(10)).subscribe(
+    query.get_result_stream(stopper).pipe(ops.take(3)).subscribe(
         on_next=lambda i: update_row(i),
         on_error=lambda e: print(f"error {e}"),
         on_completed=lambda: stopper.stop(),
