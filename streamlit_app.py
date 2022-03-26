@@ -8,12 +8,14 @@ from PIL import Image
 from timeplus import *
 
 st.set_page_config(layout="wide")
-col_img, col_txt = st.columns([1,15])
+col_img, col_txt, col_link = st.columns([1,15,1])
 with col_img:
     image = Image.open("detailed-analysis@2x.png")
     st.image(image, width=100)
 with col_txt:
     st.title("Timeplus Real-time Insights for Github")
+with col_link:
+    st.markdown("[About us](https://timeplus.com)", unsafe_allow_html=True)
 
 env = (
     Env()
@@ -47,6 +49,9 @@ def show_table_for_query(sql,table_name,row_cnt):
 col1, col2, col3 = st.columns([3,3,1])
 
 with col1:
+    st.header('Recent events')
+    show_table_for_query('select created_at,actor,type,repo from github_events','live_events',3)
+
     st.header('New events every 10m')
     sql="select window_end as time,count() as count from tumble(table(github_events),10m) group by window_end emit last 2d"
     result=Query().execSQL(sql,100)
@@ -54,9 +59,6 @@ with col1:
     df = pd.DataFrame(result["data"], columns=col)
     c = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='count:Q',tooltip=['time','count'],color=alt.value('#D53C97'))
     st.altair_chart(c, use_container_width=True)
-
-    st.header('Recent events')
-    show_table_for_query('select created_at,actor,type,repo from github_events','live_events',3)
 
     st.header('New repos')
     show_table_for_query("select created_at,actor,repo,json_extract_string(payload,'master_branch') AS branch from github_events WHERE type='CreateEvent'",'new_repo',4)
