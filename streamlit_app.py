@@ -1,34 +1,11 @@
 import streamlit as st
-import time
-import os
-import json
+import time,os,json
 from rx import operators as ops
-
 import pandas as pd
 import altair as alt
-
-from timeplus import (
-    Stream,
-    Query,
-    Env,
-    Source,
-    Stopper,
-    StreamColumn,
-    KafkaSource,
-    KafkaSink,
-    KafkaProperties,
-    SourceConnection,
-    GeneratorConfiguration,
-    GeneratorField,
-    GeneratorSource,
-    SourceConnection,
-    SlackSink,
-    SlackSinkProperty,
-    SMTPSink,
-    SMTPSinkProperty,
-)
-
 from PIL import Image
+
+from timeplus import *
 
 st.set_page_config(layout="wide")
 col_img, col_txt = st.columns([1,15])
@@ -47,19 +24,7 @@ env = (
 )
 Env.setCurrent(env)
 
-col1, col2, col3 = st.columns([3,3,1])
-
-with col1:
-    st.header('New events every 10m')
-    sql="select window_end as time,count() as count from tumble(table(github_events),10m) group by window_end emit last 2d"
-    result=Query().execSQL(sql,100)
-    col = [h["name"] for h in result["header"]]
-    df = pd.DataFrame(result["data"], columns=col)
-    c = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='count:Q',tooltip=['time','count'],color=alt.value('#D53C97'))
-    st.altair_chart(c, use_container_width=True)
-
-    st.header('Recent events')
-    sql='select created_at,actor,type,repo from github_events'
+def show_table_for_query(sql,table_name,row_cnt):
     query = Query().sql(sql).create()
     col = [h["name"] for h in query.header()]
     def update_table(row,name):
@@ -72,12 +37,26 @@ with col1:
         else:
             st.session_state[name].add_rows(df)
     stopper = Stopper()
-    query.get_result_stream(stopper).pipe(ops.take(3)).subscribe(
-        on_next=lambda i: update_table(i,'live_events'),
+    query.get_result_stream(stopper).pipe(ops.take(row_cnt)).subscribe(
+        on_next=lambda i: update_table(i,table_name),
         on_error=lambda e: print(f"error {e}"),
         on_completed=lambda: stopper.stop(),
     )
     query.cancel().delete()
+
+col1, col2, col3 = st.columns([3,3,1])
+
+with col1:
+    st.header('New events every 10m')
+    sql="select window_end as time,count() as count from tumble(table(github_events),10m) group by window_end emit last 2d"
+    result=Query().execSQL(sql,100)
+    col = [h["name"] for h in result["header"]]
+    df = pd.DataFrame(result["data"], columns=col)
+    c = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='count:Q',tooltip=['time','count'],color=alt.value('#D53C97'))
+    st.altair_chart(c, use_container_width=True)
+
+    st.header('Recent events')
+    show_table_for_query('select created_at,actor,type,repo from github_events','live_events',3)
 
 with col2:
     st.header('Hot repos')
@@ -86,24 +65,7 @@ FROM hop(github_events,1m,30m)
 WHERE type ='WatchEvent' GROUP BY window_end,repo HAVING length(followers)>1 
 emit last 4h
 """
-    query = Query().sql(sql).create()
-    col = [h["name"] for h in query.header()]
-    def update_row2(row):
-        data = {}
-        for i, f in enumerate(col):
-            data[f] = row[i]
-        df = pd.DataFrame([data], columns=col)
-        if "star_table" not in st.session_state:
-            st.session_state["star_table"] = st.table(df)
-        else:
-            st.session_state.star_table.add_rows(df)
-    stopper = Stopper()
-    query.get_result_stream(stopper).pipe(ops.take(8)).subscribe(
-        on_next=lambda i: update_row2(i),
-        on_error=lambda e: print(f"error {e}"),
-        on_completed=lambda: stopper.stop(),
-    )
-    query.cancel().delete()
+    show_table_for_query(sql,'star_table',8)
 
 # show a changing single value for total events
 with col3:
@@ -130,4 +92,3 @@ with col3:
             on_completed=lambda: stopper.stop(),
         )
         #query.cancel().delete()
-
