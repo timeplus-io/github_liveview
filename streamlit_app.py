@@ -58,6 +58,16 @@ with col1:
     st.header('Recent events')
     show_table_for_query('select created_at,actor,type,repo from github_events','live_events',3)
 
+    st.header('New repos')
+    show_table_for_query("select created_at,actor,repo,json_extract_string(payload,'master_branch') AS branch from github_events WHERE type='CreateEvent'",'new_repo',4)
+    st.header('Default branch for new repos')
+    sql="""SELECT json_extract_string(payload,'master_branch') AS branch,count(*) AS cnt
+FROM table(github_events) WHERE type='CreateEvent' GROUP BY branch ORDER BY cnt DESC LIMIT 3"""
+    result=Query().execSQL(sql,10000)
+    col = [h["name"] for h in result["header"]]
+    df = pd.DataFrame(result["data"], columns=col)
+    st.table(df)
+
 with col2:
     st.header('Hot repos')
     sql="""SELECT window_end as time,repo, group_array(distinct actor) AS followers
