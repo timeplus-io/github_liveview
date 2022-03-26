@@ -48,27 +48,13 @@ Env.setCurrent(env)
 col1, col2, col3 = st.columns([3,3,1])
 
 with col1:
-    st.header('New events over time')
+    st.header('New events every 10m')
     sql="select window_end as time,count() as count from tumble(table(github_events),10m) group by window_end emit last 2d"
-    query = Query().sql(sql).create()
-    col = [h["name"] for h in query.header()]
-    def update_row0(row,name):
-        data = {}
-        for i, f in enumerate(col):
-            data[f] = row[i]
-        df = pd.DataFrame([data], columns=col)
-        if name not in st.session_state:
-            c = alt.Chart(df).mark_line(point=alt.OverlayMarkDef(color="#D12D50")).encode(x='time:T',y='count:Q',tooltip=['time','count'],color=alt.value('#D53C97'))
-            st.session_state[name] = st.altair_chart(c, use_container_width=True)
-        else:
-            st.session_state[name].add_rows(df)
-    stopper = Stopper()
-    query.get_result_stream(stopper).subscribe(
-        on_next=lambda i: update_row0(i,"linechart_cnt"),
-        on_error=lambda e: print(f"error {e}"),
-        on_completed=lambda: stopper.stop(),
-    )
-    query.cancel().delete()
+    result=Query().execSQL(sql,100)
+    col = [h["name"] for h in result["header"]]
+    df = pd.DataFrame(result["data"], columns=col)
+    c = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='count:Q',tooltip=['time','count'],color=alt.value('#D53C97'))
+    st.altair_chart(c, use_container_width=True)
 
 with col2:
     st.header('Hot repos')
