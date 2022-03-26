@@ -29,33 +29,18 @@ from timeplus import (
 
 from PIL import Image
 
-#image = Image.open("playground.png")
+image = Image.open("detailed-analysis@2x.png")
+st.image(image, caption="Timeplus Real-time Insights for Github")
+#st.write("Fast + Powerful Real-Time Analytics Made Intuitive.")
 
-
-#st.image(image, caption="Timeplus")
-st.write("Fast + Powerful Real-Time Analytics Made Intuitive.")
-st.write("See https://timeplus.com")
-
-def select_env(environment):
-    env = (
-        Env()
-        .schema(st.secrets["TIMEPLUS_SCHEMA"])
-        .host(st.secrets["TIMEPLUS_HOST"])
-        .port(st.secrets["TIMEPLUS_PORT"])
-        .login(st.secrets["AUTH0_API_CLIENT_ID"], st.secrets["AUTH0_API_CLIENT_SECRET"])
-    )
-    Env.setCurrent(env)
-    st.sidebar.text(env.base_url())
-    st.sidebar.write(env.info())
-
-
-environment = st.sidebar.selectbox(
-    "Select which environment to use", ("public demo",)
+env = (
+    Env()
+    .schema(st.secrets["TIMEPLUS_SCHEMA"])
+    .host(st.secrets["TIMEPLUS_HOST"])
+    .port(st.secrets["TIMEPLUS_PORT"])
+    .login(st.secrets["AUTH0_API_CLIENT_ID"], st.secrets["AUTH0_API_CLIENT_SECRET"])
 )
-
-#selected_case = st.sidebar.selectbox("Select query case", tuple(case.keys()))
-
-select_env(environment)
+Env.setCurrent(env)
 
 with st.container():
     sql="select count(*) from table(github_events)"
@@ -81,6 +66,6 @@ with st.container():
     query.get_result_stream(stopper).pipe(ops.take(6)).subscribe(
         on_next=lambda i: update_row(i),
         on_error=lambda e: print(f"error {e}"),
-        on_completed=lambda: dostopper.stop(),
+        on_completed=lambda: stopper.stop(),
     )
     query.cancel().delete()
