@@ -31,10 +31,12 @@ from timeplus import (
 from PIL import Image
 
 st.set_page_config(layout="wide")
-
-image = Image.open("detailed-analysis@2x.png")
-st.image(image, caption="Timeplus Real-time Insights for Github")
-#st.write("Fast + Powerful Real-Time Analytics Made Intuitive.")
+col_img, col_txt = st.columns([1,15])
+with col_img:
+    image = Image.open("detailed-analysis@2x.png")
+    st.image(image, width=100)
+with col_txt:
+    st.title("Timeplus Real-time Insights for Github")
 
 env = (
     Env()
@@ -56,6 +58,27 @@ with col1:
     c = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='count:Q',tooltip=['time','count'],color=alt.value('#D53C97'))
     st.altair_chart(c, use_container_width=True)
 
+    st.header('Recent events')
+    sql='select created_at,actor,type,repo from github_events'
+    query = Query().sql(sql).create()
+    col = [h["name"] for h in query.header()]
+    def update_table(row,name):
+        data = {}
+        for i, f in enumerate(col):
+            data[f] = row[i]
+        df = pd.DataFrame([data], columns=col)
+        if name not in st.session_state:
+            st.session_state[name] = st.table(df)
+        else:
+            st.session_state[name].add_rows(df)
+    stopper = Stopper()
+    query.get_result_stream(stopper).pipe(ops.take(3)).subscribe(
+        on_next=lambda i: update_table(i,'live_events'),
+        on_error=lambda e: print(f"error {e}"),
+        on_completed=lambda: stopper.stop(),
+    )
+    query.cancel().delete()
+
 with col2:
     st.header('Hot repos')
     sql="""SELECT window_end as time,repo, group_array(distinct actor) AS followers
@@ -75,7 +98,7 @@ emit last 4h
         else:
             st.session_state.star_table.add_rows(df)
     stopper = Stopper()
-    query.get_result_stream(stopper).pipe(ops.take(16)).subscribe(
+    query.get_result_stream(stopper).pipe(ops.take(8)).subscribe(
         on_next=lambda i: update_row2(i),
         on_error=lambda e: print(f"error {e}"),
         on_completed=lambda: stopper.stop(),
@@ -98,7 +121,7 @@ with col3:
         def update_row(row):
             delta=row[0]-st.session_state.last_cnt
             if (delta>0):
-                st.metric(label="Github events", value="{:,}".format(row[0]), delta=row[0]-st.session_state.last_cnt)
+                st.metric(label="Github events", value="{:,}".format(row[0]), delta=row[0]-st.session_state.last_cnt, delta_color='inverse')
                 st.session_state.last_cnt=row[0]
         stopper = Stopper()
         query.get_result_stream(stopper).subscribe(
