@@ -107,9 +107,9 @@ with col3:
                 st.metric(label="Github events", value="{:,}".format(row[0]), delta=row[0]-st.session_state.last_cnt, delta_color='inverse')
                 st.session_state.last_cnt=row[0]
         stopper = Stopper()
-        query.get_result_stream(stopper).subscribe(
+        query.get_result_stream(stopper).pipe(ops.take(200)).subscribe(
             on_next=lambda i: update_row(i),
             on_error=lambda e: print(f"error {e}"),
             on_completed=lambda: stopper.stop(),
         )
-        #query.cancel().delete()
+        query.cancel().delete()
