@@ -59,7 +59,7 @@ with col1:
 
     st.header('New events every 10m')
     sql="select window_end as time,count() as count from tumble(table(github_events),10m) group by window_end emit last 2d"
-    result=Query().execSQL(sql,100)
+    result=Query().execSQL(sql,1000)
     col = [h["name"] for h in result["header"]]
     df = pd.DataFrame(result["data"], columns=col)
     c = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='count:Q',tooltip=['time','count'],color=alt.value('#D53C97'))
