@@ -1,5 +1,5 @@
 import streamlit as st
-import time,datetime,pytz,os,json
+import os
 from rx import operators as ops
 import pandas as pd
 import altair as alt
@@ -28,7 +28,7 @@ Env.setCurrent(env)
 
 with st.container():
     #a live bar chart
-    sql="SELECT repo,count(distinct actor) AS stars FROM github_events WHERE type ='WatchEvent' GROUP BY repo HAVING stars>1 EMIT last 4h"
+    sql="SELECT repo,count(distinct actor) AS stars FROM github_events WHERE type ='WatchEvent' GROUP BY repo HAVING stars>1 EMIT last 1h"
     st.code(sql, language="sql")
     query = Query().sql(sql).create()
     col = [h["name"] for h in query.header()]
@@ -39,13 +39,13 @@ with st.container():
 
         df = pd.DataFrame([data], columns=col)
         if name not in st.session_state:
-            bars=alt.Chart(df).mark_bar().encode(x='stars:Q',y='repo:N')
+            bars=alt.Chart(df).mark_bar().encode(x='stars:Q',y=alt.Y('repo:N',sort='-x'))
             text = bars.mark_text(align='left',baseline='middle',dx=3 ).encode(text='stars:Q')
             st.session_state[name] = st.altair_chart(bars+text, use_container_width=True)
         else:
             st.session_state[name].add_rows(df)
     stopper = Stopper()
-    query.get_result_stream(stopper).pipe(ops.take(2000)).subscribe(
+    query.get_result_stream(stopper).pipe(ops.take(20000)).subscribe(
         on_next=lambda i: update_row(i,"chart"),
         on_error=lambda e: print(f"error {e}"),
         on_completed=lambda: stopper.stop(),
