@@ -28,7 +28,7 @@ Env.setCurrent(env)
 
 with st.container():
     #a live bar chart
-    sql="SELECT repo,count(distinct actor) AS stars FROM github_events WHERE type ='WatchEvent' GROUP BY repo HAVING stars>1 EMIT last 1h"
+    sql="""SELECT repo,count(*) AS events FROM github_events GROUP BY repo HAVING events>1 EMIT last 1d"""
     st.code(sql, language="sql")
     query = Query().sql(sql).create()
     col = [h["name"] for h in query.header()]
@@ -39,9 +39,9 @@ with st.container():
 
         df = pd.DataFrame([data], columns=col)
         if name not in st.session_state:
-            bars=alt.Chart(df).mark_bar().encode(x='stars:Q',y=alt.Y('repo:N',sort='-x'))
-            text = bars.mark_text(align='left',baseline='middle',dx=3 ).encode(text='stars:Q')
-            st.session_state[name] = st.altair_chart(bars+text, use_container_width=True)
+            bars=alt.Chart(df).mark_bar().encode(x='events:Q',y=alt.Y('repo:N',sort='-x'),tooltip=['events','repo'])
+            #text = bars.mark_text(align='left',baseline='middle',dx=3 ).encode(text='events:Q')
+            st.session_state[name] = st.altair_chart(bars, use_container_width=True)
         else:
             st.session_state[name].add_rows(df)
     stopper = Stopper()
