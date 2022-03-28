@@ -3,7 +3,6 @@ import datetime,pytz
 from rx import operators as ops
 import pandas as pd
 from PIL import Image
-
 from timeplus import *
 
 st.set_page_config(layout="wide")
@@ -17,16 +16,13 @@ with col_link:
     st.markdown("[About us](https://timeplus.com)", unsafe_allow_html=True)
 
 env = (
-    Env()
-    .schema(st.secrets["TIMEPLUS_SCHEMA"])
-    .host(st.secrets["TIMEPLUS_HOST"])
-    .port(st.secrets["TIMEPLUS_PORT"])
+    Env().schema(st.secrets["TIMEPLUS_SCHEMA"]).host(st.secrets["TIMEPLUS_HOST"]).port(st.secrets["TIMEPLUS_PORT"])
     .login(st.secrets["AUTH0_API_CLIENT_ID"], st.secrets["AUTH0_API_CLIENT_SECRET"])
 )
 Env.setCurrent(env)
 
 MAX_ROW=10
-st.session_state.rows=MAX_ROW #only show 10 rows
+st.session_state.rows=MAX_ROW
 sql='SELECT created_at,actor,type,repo FROM github_events'
 st.code(sql, language="sql")
 with st.empty():
