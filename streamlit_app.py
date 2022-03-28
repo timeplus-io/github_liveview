@@ -93,13 +93,13 @@ with col3:
     st.header('Event count')
     with st.empty():
         #show the initial events first
-        sql="select count(*) from table(github_events) emit periodic 1s"
+        sql="select count(*) from table(github_events)"
         cnt=Query().execSQL(sql)["data"][0][0]
         st.metric(label="Github events", value="{:,}".format(cnt))
         st.session_state.last_cnt=cnt
 
         #create a streaming query to update counts
-        sql=f"select {cnt}+count(*) as events from github_events"
+        sql=f"select {cnt}+count(*) as events from github_events emit periodic 1s"
         query = Query().sql(sql).create()
         def update_row(row):
             delta=row[0]-st.session_state.last_cnt
