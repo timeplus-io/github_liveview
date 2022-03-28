@@ -1,8 +1,7 @@
 import streamlit as st
-import time,datetime,pytz,os,json
+import datetime,pytz
 from rx import operators as ops
 import pandas as pd
-import altair as alt
 from PIL import Image
 
 from timeplus import *
