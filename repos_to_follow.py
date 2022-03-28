@@ -28,7 +28,7 @@ Env.setCurrent(env)
 
 with st.container():
     #a live bar chart
-    sql="""SELECT repo,count(*) AS events FROM github_events GROUP BY repo HAVING events>1 EMIT last 1d"""
+    sql="""SELECT repo,count(*) AS events FROM github_events GROUP BY repo HAVING events>1 SETTINGS seek_to='-1d'"""
     st.code(sql, language="sql")
     query = Query().sql(sql).create()
     col = [h["name"] for h in query.header()]

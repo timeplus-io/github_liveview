@@ -58,7 +58,7 @@ with col1:
     show_table_for_query('select created_at,actor,type,repo from github_events','live_events',3)
 
     st.header('New events every 10m')
-    sql="select window_end as time,count() as count from tumble(table(github_events),10m) group by window_end emit last 2d"
+    sql="select window_end as time,count() as count from tumble(table(github_events),10m) group by window_end settings seek_to='-2d'"
     result=Query().execSQL(sql,1000)
     col = [h["name"] for h in result["header"]]
     df = pd.DataFrame(result["data"], columns=col)
