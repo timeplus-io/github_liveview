@@ -28,7 +28,10 @@ Env.setCurrent(env)
 
 with st.container():
     #a live bar chart
-    sql="""SELECT repo,count(*) AS events FROM github_events GROUP BY repo HAVING events>1 SETTINGS seek_to='-1d'"""
+    sql="""SELECT max_k(repo,10,cnt) AS max_cnt FROM 
+    (SELECT repo,count(*) AS cnt FROM github_events GROUP BY repo HAVING cnt>1 SETTINGS seek_to='-10m' )
+    """
+    sql="""SELECT repo,count(*) AS events FROM github_events GROUP BY repo HAVING events>2 SETTINGS seek_to='-1h'"""
     st.code(sql, language="sql")
     query = Query().sql(sql).create()
     col = [h["name"] for h in query.header()]
@@ -45,7 +48,7 @@ with st.container():
         else:
             st.session_state[name].add_rows(df)
     stopper = Stopper()
-    query.get_result_stream(stopper).pipe(ops.take(20000)).subscribe(
+    query.get_result_stream(stopper).pipe(ops.take(100)).subscribe(
         on_next=lambda i: update_row(i,"chart"),
         on_error=lambda e: print(f"error {e}"),
         on_completed=lambda: stopper.stop(),
