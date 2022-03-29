@@ -27,28 +27,25 @@ env = (
 Env.setCurrent(env)
 
 with st.container():
-    #a live bar chart
     sql="""SELECT max_k(repo,10,cnt) AS max_cnt FROM 
-    (SELECT repo,count(*) AS cnt FROM github_events GROUP BY repo HAVING cnt>1 SETTINGS seek_to='-10m' )
+    (SELECT repo,count(*) AS cnt FROM github_events GROUP BY repo SETTINGS seek_to='-4h' )
     """
-    sql="""SELECT repo,count(*) AS events FROM github_events GROUP BY repo HAVING events>5 EMIT periodic 10s SETTINGS seek_to='-1h'"""
+    #sql="""SELECT repo,count(*) AS events FROM github_events GROUP BY repo HAVING events>5 EMIT periodic 10s SETTINGS seek_to='-1h'"""
     st.code(sql, language="sql")
     query = Query().sql(sql).create()
-    col = [h["name"] for h in query.header()]
     def update_row(row,name):
         data = {}
-        for i, f in enumerate(col):
-            data[f] = row[i]
+        for x in row[0]:
+            data['repo']=x[0]
+            data['events']=x[1]
 
-        df = pd.DataFrame([data], columns=col)
+        df = pd.DataFrame([data], columns=["repo","events"])
         if name not in st.session_state:
-            bars=alt.Chart(df).mark_bar().encode(x='events:Q',y=alt.Y('repo:N',sort='-x'),tooltip=['events','repo'])
-            #text = bars.mark_text(align='left',baseline='middle',dx=3 ).encode(text='events:Q')
-            st.session_state[name] = st.altair_chart(bars, use_container_width=True)
+            st.session_state[name] = st.altair_chart(alt.Chart(df).mark_bar().encode(x='events:Q',y=alt.Y('repo:N',sort='-x'),tooltip=['events','repo']), use_container_width=True)
         else:
             st.session_state[name].add_rows(df)
     stopper = Stopper()
-    query.get_result_stream(stopper).pipe(ops.take(100)).subscribe(
+    query.get_result_stream(stopper).pipe(ops.take(10)).subscribe(
         on_next=lambda i: update_row(i,"chart"),
         on_error=lambda e: print(f"error {e}"),
         on_completed=lambda: stopper.stop(),
