@@ -13,7 +13,7 @@ with col_img:
 with col_txt:
     st.title("Timeplus Real-time Insights for Github")
 with col_link:
-    st.markdown("[Source Code](https://github.com/timeplus-io/github_liveview/blob/develop/liveview.py) | [Full Dashboard](streamlit_app.py) | [Repos to Follow](repos_to_follow.py) | [About Timeplus](https://timeplus.com)", unsafe_allow_html=True)
+    st.markdown("[Source Code](https://github.com/timeplus-io/github_liveview/blob/develop/liveview.py) | [Full Dashboard](https://share.streamlit.io/timeplus-io/github_liveview/develop/streamlit_app.py) | [Repos to Follow](https://share.streamlit.io/timeplus-io/github_liveview/develop/repos_to_follow.py) | [About Timeplus](https://timeplus.com)", unsafe_allow_html=True)
     
 env = (
     Env().schema(st.secrets["TIMEPLUS_SCHEMA"]).host(st.secrets["TIMEPLUS_HOST"]).port(st.secrets["TIMEPLUS_PORT"])
