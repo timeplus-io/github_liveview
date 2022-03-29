@@ -8,14 +8,14 @@ from PIL import Image
 from timeplus import *
 
 st.set_page_config(layout="wide")
-col_img, col_txt, col_link = st.columns([1,15,1])
+col_img, col_txt, col_link = st.columns([1,10,5])
 with col_img:
     image = Image.open("detailed-analysis@2x.png")
     st.image(image, width=100)
 with col_txt:
     st.title("Timeplus Real-time Insights for Github")
 with col_link:
-    st.markdown("[About us](https://timeplus.com)", unsafe_allow_html=True)
+    st.markdown("[Source Code](https://github.com/timeplus-io/github_liveview/blob/develop/streamlit_app.py) | [About Timeplus](https://timeplus.com)", unsafe_allow_html=True)
 
 env = (
     Env()
@@ -27,6 +27,7 @@ env = (
 Env.setCurrent(env)
 
 def show_table_for_query(sql,table_name,row_cnt):
+    st.code(sql, language="sql")
     query = Query().sql(sql).create()
     col = [h["name"] for h in query.header()]
     def update_table(row,name):
@@ -55,10 +56,12 @@ col1, col2, col3 = st.columns([3,3,1])
 
 with col1:
     st.header('Recent events')
-    show_table_for_query('select created_at,actor,type,repo from github_events','live_events',3)
+    show_table_for_query('SELECT created_at,actor,type,repo FROM github_events','live_events',3)
 
     st.header('New events every 10m')
-    sql="select window_end as time,count() as count from tumble(table(github_events),10m) group by window_end settings seek_to='-2d'"
+    sql="""SELECT window_end AS time,count() AS count from tumble(table(github_events),10m) 
+    GROUP BY window_end SETTINGS seek_to='-2h'"""
+    st.code(sql, language="sql")
     result=Query().execSQL(sql,1000)
     col = [h["name"] for h in result["header"]]
     df = pd.DataFrame(result["data"], columns=col)
@@ -67,11 +70,14 @@ with col1:
 
 with col2:
     st.header('New repos')
-    show_table_for_query("select created_at,actor,repo,json_extract_string(payload,'master_branch') AS branch from github_events WHERE type='CreateEvent'",'new_repo',3)
+    show_table_for_query("""SELECT created_at,actor,repo,json_extract_string(payload,'master_branch') AS branch 
+    FROM github_events WHERE type='CreateEvent'""",'new_repo',3)
     st.header('Default branch for new repos')
 
     sql="""SELECT json_extract_string(payload,'master_branch') AS branch,count(*) AS cnt
-FROM table(github_events) WHERE type='CreateEvent' GROUP BY branch ORDER BY cnt DESC LIMIT 3"""
+FROM table(github_events) WHERE type='CreateEvent' 
+GROUP BY branch ORDER BY cnt DESC LIMIT 3"""
+    st.code(sql, language="sql")
     result=Query().execSQL(sql,10000)
     col = [h["name"] for h in result["header"]]
     df = pd.DataFrame(result["data"], columns=col)
@@ -81,16 +87,17 @@ FROM table(github_events) WHERE type='CreateEvent' GROUP BY branch ORDER BY cnt 
     st.altair_chart(pie+text, use_container_width=True)
 
     st.header('Hot repos')
-    sql="""SELECT window_end as time,repo, group_array(distinct actor) AS followers
+    sql="""SELECT window_end AS time,repo, group_array(distinct actor) AS followers
 FROM hop(github_events,5m,30m) 
 WHERE type ='WatchEvent' GROUP BY window_end,repo HAVING length(followers)>1 
-emit last 30m
+SETTINGS seek_to='-30m'
 """
     show_table_for_query(sql,'star_table',8)
 
 # show a changing single value for total events
 with col3:
     st.header('Event count')
+    st.code("select count(*) from github_events emit periodic 1s", language="sql")
     with st.empty():
         #show the initial events first
         sql="select count(*) from table(github_events)"

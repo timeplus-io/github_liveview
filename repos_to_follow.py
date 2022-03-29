@@ -8,14 +8,14 @@ from PIL import Image
 from timeplus import *
 
 st.set_page_config(layout="wide")
-col_img, col_txt, col_link = st.columns([1,15,1])
+col_img, col_txt, col_link = st.columns([1,10,5])
 with col_img:
     image = Image.open("detailed-analysis@2x.png")
     st.image(image, width=100)
 with col_txt:
     st.title("Timeplus Real-time Insights for Github")
 with col_link:
-    st.markdown("[About us](https://timeplus.com)", unsafe_allow_html=True)
+    st.markdown("[Source Code](https://github.com/timeplus-io/github_liveview/blob/develop/repos_to_follow.py) | [Full Dashboard](https://share.streamlit.io/timeplus-io/github_liveview/develop/streamlit_app.py) | [Live events](https://share.streamlit.io/timeplus-io/github_liveview/develop/liveview.py) | [About Timeplus](https://timeplus.com)", unsafe_allow_html=True)
 
 env = (
     Env()
