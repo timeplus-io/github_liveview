@@ -72,8 +72,8 @@ with col2:
     st.header('New repos')
     show_table_for_query("""SELECT created_at,actor,repo,json_extract_string(payload,'master_branch') AS branch 
     FROM github_events WHERE type='CreateEvent'""",'new_repo',3)
-    st.header('Default branch for new repos')
-
+    
+    #st.header('Default branch for new repos')
     sql="""SELECT json_extract_string(payload,'master_branch') AS branch,count(*) AS cnt
 FROM table(github_events) WHERE type='CreateEvent' 
 GROUP BY branch ORDER BY cnt DESC LIMIT 3"""
