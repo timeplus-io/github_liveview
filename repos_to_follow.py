@@ -27,7 +27,7 @@ env = (
 Env.setCurrent(env)
 
 sql="""SELECT max_k(repo,10,cnt) AS max_cnt FROM 
-(SELECT repo,count(*) AS cnt FROM github_events GROUP BY repo SETTINGS seek_to='-4h' )
+(SELECT repo,count(*) AS cnt FROM github_events GROUP BY repo EMIT periodic 5s SETTINGS seek_to='-4h' )
 """
 #sql="""SELECT repo,count(*) AS events FROM github_events GROUP BY repo HAVING events>5 EMIT periodic 10s SETTINGS seek_to='-1h'"""
 st.code(sql, language="sql")
@@ -44,7 +44,7 @@ with st.empty():
         df = pd.DataFrame(rows, columns=["repo","events"])
         st.altair_chart(alt.Chart(df).mark_bar().encode(x='events:Q',y=alt.Y('repo:N',sort='-x'),tooltip=['events','repo']), use_container_width=True)
     stopper = Stopper()
-    query.get_result_stream(stopper).pipe(ops.take(3)).subscribe(
+    query.get_result_stream(stopper).pipe(ops.take(100)).subscribe(
         on_next=lambda i: update_row(i),
         on_error=lambda e: print(f"error {e}"),
         on_completed=lambda: stopper.stop(),
