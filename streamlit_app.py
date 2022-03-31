@@ -101,7 +101,7 @@ with col3:
     with st.empty():
         #show the initial events first
         sql="select count(*) from table(github_events)"
-        cnt=Query().execSQL(sql)["data"][0][0]
+        cnt=Query().execSQL(sql,10000)["data"][0][0]
         st.metric(label="Github events", value="{:,}".format(cnt))
         st.session_state.last_cnt=cnt
 
