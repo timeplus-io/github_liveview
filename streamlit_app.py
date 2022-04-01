@@ -73,18 +73,18 @@ with col2:
     show_table_for_query("""SELECT created_at,actor,repo,json_extract_string(payload,'master_branch') AS branch 
     FROM github_events WHERE type='CreateEvent'""",'new_repo',3)
     
-    #st.header('Default branch for new repos')
+    st.header('Default branch for new repos')
     sql="""SELECT json_extract_string(payload,'master_branch') AS branch,count(*) AS cnt
-FROM table(github_events) WHERE type='CreateEvent' 
+FROM table(github_events) WHERE _tp_time>date_sub(now(),1h) AND type='CreateEvent' 
 GROUP BY branch ORDER BY cnt DESC LIMIT 3"""
-    #st.code(sql, language="sql")
-    #result=Query().execSQL(sql,100000)
-    #col = [h["name"] for h in result["header"]]
-    #df = pd.DataFrame(result["data"], columns=col)
-    #base = alt.Chart(df).encode(theta=alt.Theta('cnt:Q',stack=True),color=alt.Color('branch:N',legend=None),tooltip=['branch','cnt'])
-    #pie=base.mark_arc(outerRadius=80)
-    #text = base.mark_text(radius=110, size=16).encode(text='branch:N')
-    #st.altair_chart(pie+text, use_container_width=True)
+    st.code(sql, language="sql")
+    result=Query().execSQL(sql,100000)
+    col = [h["name"] for h in result["header"]]
+    df = pd.DataFrame(result["data"], columns=col)
+    base = alt.Chart(df).encode(theta=alt.Theta('cnt:Q',stack=True),color=alt.Color('branch:N',legend=None),tooltip=['branch','cnt'])
+    pie=base.mark_arc(outerRadius=80)
+    text = base.mark_text(radius=110, size=16).encode(text='branch:N')
+    st.altair_chart(pie+text, use_container_width=True)
 
     st.header('Hot repos')
     sql="""SELECT window_end AS time,repo, group_array(distinct actor) AS followers
