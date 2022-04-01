@@ -60,7 +60,7 @@ with col1:
 
     st.header('New events every 10m')
     sql="""SELECT window_end AS time,count() AS count from tumble(table(github_events),10m) 
-    GROUP BY window_end SETTINGS seek_to='-2h'"""
+    WHERE _tp_time > date_sub(now(), 2h) GROUP BY window_end"""
     st.code(sql, language="sql")
     result=Query().execSQL(sql,1000)
     col = [h["name"] for h in result["header"]]
