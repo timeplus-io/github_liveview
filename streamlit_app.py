@@ -55,9 +55,6 @@ def show_table_for_query(sql,table_name,row_cnt):
 col1, col2, col3 = st.columns([3,3,1])
 
 with col1:
-    st.header('Recent events')
-    show_table_for_query('SELECT created_at,actor,type,repo FROM github_events','live_events',3)
-
     st.header('New events every 10m')
     sql="""SELECT window_end AS time,count() AS count from tumble(table(github_events),10m) 
     WHERE _tp_time > date_sub(now(), 2h) GROUP BY window_end"""
@@ -67,6 +64,9 @@ with col1:
     df = pd.DataFrame(result["data"], columns=col)
     c = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='count:Q',tooltip=['time','count'],color=alt.value('#D53C97'))
     st.altair_chart(c, use_container_width=True)
+
+    st.header('Recent events')
+    show_table_for_query('SELECT created_at,actor,type,repo FROM github_events','live_events',3)
 
 with col2:
     st.header('New repos')
