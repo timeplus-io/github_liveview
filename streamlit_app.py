@@ -55,23 +55,22 @@ def show_table_for_query(sql,table_name,row_cnt):
 col1, col2, col3 = st.columns([3,3,1])
 
 with col1:
-    st.header('New events every 10m')
-    sql="""SELECT window_end AS time,count() AS count from tumble(table(github_events),10m) 
-    WHERE _tp_time > date_sub(now(), 2h) GROUP BY window_end"""
+    st.header('New events every minute')
+    sql="""SELECT window_end AS time,count() AS count from tumble(table(github_events),1m) 
+WHERE _tp_time > date_sub(now(), 2h) GROUP BY window_end"""
     st.code(sql, language="sql")
     result=Query().execSQL(sql,1000)
     col = [h["name"] for h in result["header"]]
     df = pd.DataFrame(result["data"], columns=col)
-    c = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='count:Q',tooltip=['time','count'],color=alt.value('#D53C97'))
+    c = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='count:Q',tooltip=['count'],color=alt.value('#D53C97'))
     st.altair_chart(c, use_container_width=True)
 
     st.header('Recent events')
     show_table_for_query('SELECT created_at,actor,type,repo FROM github_events','live_events',3)
 
 with col2:
-    st.header('New repos')
-    show_table_for_query("""SELECT created_at,actor,repo,json_extract_string(payload,'master_branch') AS branch 
-    FROM github_events WHERE type='CreateEvent'""",'new_repo',3)
+    #st.header('New repos')
+    #show_table_for_query("""SELECT created_at,actor,repo,json_extract_string(payload,'master_branch') AS branch \nFROM github_events WHERE type='CreateEvent'""",'new_repo',3)
     
     st.header('Default branch for new repos')
     sql="""SELECT json_extract_string(payload,'master_branch') AS branch,count(*) AS cnt
@@ -87,17 +86,16 @@ GROUP BY branch ORDER BY cnt DESC LIMIT 3"""
     st.altair_chart(pie+text, use_container_width=True)
 
     st.header('Hot repos')
-    sql="""SELECT window_end AS time,repo, group_array(distinct actor) AS followers
-FROM hop(github_events,5m,30m) 
-WHERE type ='WatchEvent' GROUP BY window_end,repo HAVING length(followers)>1 
-SETTINGS seek_to='-30m'
+    sql="""SELECT max(created_at) AS followed_at, repo, count(distinct actor) AS new_followers
+FROM table(github_events) WHERE _tp_time>date_sub(now(),10m) AND type ='WatchEvent' 
+GROUP BY repo ORDER BY new_followers DESC LIMIT 3
 """
-    show_table_for_query(sql,'star_table',8)
+    show_table_for_query(sql,'star_table',3)
 
 # show a changing single value for total events
 with col3:
     st.header('Event count')
-    st.code("select count(*) from github_events emit periodic 1s", language="sql")
+    st.code("SELECT count(*) FROM github_events EMIT periodic 1s", language="sql")
     with st.empty():
         #show the initial events first
         sql="select count(*) from table(github_events)"
