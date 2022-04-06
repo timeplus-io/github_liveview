@@ -15,7 +15,7 @@ with col_img:
 with col_txt:
     st.title("Timeplus Real-time Insights for Github")
 with col_link:
-    st.markdown("[Source Code](https://github.com/timeplus-io/github_liveview/blob/develop/streamlit_app.py) | [About Timeplus](https://timeplus.com)", unsafe_allow_html=True)
+    st.markdown("[Source Code](https://gist.github.com/jovezhong/eb2f8ead2741369435e604be0ce9ee39) | [About Timeplus](https://timeplus.com)", unsafe_allow_html=True)
 
 env = (
     Env()
