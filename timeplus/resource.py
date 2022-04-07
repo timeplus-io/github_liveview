@@ -2,6 +2,7 @@ import requests
 
 from timeplus.base import Base
 from timeplus.env import Env
+from timeplus.error import TimeplusAPIError
 
 
 class ResourceBase(Base):
@@ -27,16 +28,14 @@ class ResourceBase(Base):
                 timeout=self._env.http_timeout(),
             )
             if r.status_code < 200 or r.status_code > 299:
-                self._logger.error(
-                    "failed to create {} {}",
-                    self._resource_name,
-                    r.text,
-                )
+                err_msg = f"failed to create {self._resource_name} due to {r.text}"
+                self._logger.error(err_msg)
+                raise TimeplusAPIError("post", r.status_code, err_msg)
             else:
                 self._logger.debug("source {} has been created", self._resource_name)
                 self._data = r.json()
         except Exception as e:
-            self._logger.error("failed to create {} {}", self._resource_name, e)
+            raise e
         finally:
             return self
 
@@ -50,12 +49,14 @@ class ResourceBase(Base):
                 timeout=self._env.http_timeout(),
             )
             if r.status_code < 200 or r.status_code > 299:
-                self._logger.error("failed to get {} {}", self._resource_name, r.text)
+                err_msg = f"failed to get {self._resource_name} due to {r.text}"
+                self._logger.error(err_msg)
+                raise TimeplusAPIError("get", r.status_code, err_msg)
             else:
                 self._logger.debug("get {} success", self._resource_name)
                 self._data = r.json()
         except Exception as e:
-            self._logger.error(f"failed to get {self._resource_name} {e}")
+            raise e
         finally:
             return self
 
@@ -69,13 +70,13 @@ class ResourceBase(Base):
                 timeout=self._env.http_timeout(),
             )
             if r.status_code < 200 or r.status_code > 299:
-                self._logger.error(
-                    f"failed to delete {self._resource_name} {r.status_code} {r.text}"
-                )
+                err_msg = f"failed to delete {self._resource_name} due to {r.text}"
+                self._logger.error(err_msg)
+                raise TimeplusAPIError("delete", r.status_code, err_msg)
             else:
                 self._logger.debug(f"delete {self._resource_name} success")
         except Exception as e:
-            self._logger.error(f"failed to delete {self._resource_name} {e}")
+            raise e
         finally:
             return self
 
@@ -89,13 +90,15 @@ class ResourceBase(Base):
                 timeout=self._env.http_timeout(),
             )
             if r.status_code < 200 or r.status_code > 299:
-                self._logger.error(
-                    f"failed to post {action_name} on {self._resource_name} {r.text}"
+                err_msg = (
+                    f"failed to {action_name} {self._resource_name} due to {r.text}"
                 )
+                self._logger.error(err_msg)
+                raise TimeplusAPIError("post", r.status_code, err_msg)
             else:
                 self._logger.debug(f"{action_name} {self._resource_name} success")
         except Exception as e:
-            self._logger.error(f"failed to {action_name} {self._resource_name} {e}")
+            raise e
         finally:
             return self
 
@@ -111,10 +114,12 @@ class ResourceBase(Base):
             env.logger().debug("get {}", url)
             r = requests.get(url, headers=headers, timeout=env.http_timeout())
             if r.status_code < 200 or r.status_code > 299:
-                env.logger().error(f"failed to list {cls._resource_name} {r.text}")
+                err_msg = f"failed to list {cls._resource_name} due to {r.text}"
+                env.logger().error(err_msg)
+                raise TimeplusAPIError("get", r.status_code, err_msg)
             else:
                 env.logger().debug(f"list {cls._resource_name} success")
                 result = [cls.build(val, env=env) for val in r.json()]
                 return result
         except Exception as e:
-            env.logger().error(f"failed to list {cls._resource_name} {e}")
+            raise e

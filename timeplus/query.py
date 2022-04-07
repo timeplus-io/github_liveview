@@ -7,6 +7,7 @@ import dateutil.parser
 from timeplus.resource import ResourceBase
 from timeplus.env import Env
 from timeplus.type import Type
+from timeplus.error import TimeplusAPIError
 
 
 class Query(ResourceBase):
@@ -22,7 +23,7 @@ class Query(ResourceBase):
         return obj
 
     @classmethod
-    def execSQL(cls, sql, timeout=10, env=None):
+    def execSQL(cls, sql, timeout=1000, env=None):
         if env is None:
             env = Env.current()
 
@@ -36,11 +37,14 @@ class Query(ResourceBase):
         try:
             r = requests.post(f"{url}", json=sqlRequest, headers=headers)
             if r.status_code < 200 or r.status_code > 299:
-                env.logger.error(f"failed to run sql {r.status_code} {r.text}")
+                err_msg = f"failed to run sql due to {r.text}"
+                env.logger.error(err_msg)
+                raise TimeplusAPIError("post", r.status_code, err_msg)
             else:
                 return r.json()
         except Exception as e:
             env.logger.error(f"failed to run sql {e}")
+            raise e
 
     @classmethod
     def exec(cls, sql, env=None):
@@ -58,11 +62,14 @@ class Query(ResourceBase):
         try:
             r = requests.post(f"{url}", json=sqlRequest, headers=headers)
             if r.status_code < 200 or r.status_code > 299:
-                env.logger.error(f"failed to run exec {r.status_code} {r.text}")
+                err_msg = f"failed to run exec due to {r.text}"
+                env.logger.error(err_msg)
+                raise TimeplusAPIError("post", r.status_code, err_msg)
             else:
                 return r.json()
         except Exception as e:
             env.logger.error(f"failed to run exec {e}")
+            raise e
 
     def name(self, *args):
         return self.prop("name", *args)
@@ -103,13 +110,14 @@ class Query(ResourceBase):
         try:
             r = requests.post(f"{url}", json=sinkRequest, headers=self._headers)
             if r.status_code < 200 or r.status_code > 299:
-                self._logger.error(
-                    f"failed to add sink {sink.id()} to query {self.id()} {r.status_code} {r.text}"
-                )
+                err_msg = f"failed to add sink {sink.id()} to query {self.id()} {r.status_code} {r.text}"
+                self._logger.error(err_msg)
+                raise TimeplusAPIError("post", r.status_code, err_msg)
             else:
                 self._logger.debug(f"add sink {sink.id()} to query {self.id()} success")
         except Exception as e:
             self._logger.error(f"failed to add sink {e}")
+            raise e
         finally:
             return self
 

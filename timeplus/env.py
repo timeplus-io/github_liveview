@@ -4,6 +4,7 @@ import requests
 from requests.structures import CaseInsensitiveDict
 
 from timeplus.base import Base
+from timeplus.error import TimeplusAPIError
 from loguru import logger
 
 log_level = os.environ.get("GLUON_LOG_LEVEL", "INFO")
@@ -111,14 +112,14 @@ class Env(Base):
                 timeout=self.http_timeout(),
             )
             if r.status_code < 200 or r.status_code > 299:
-                self._logger.error(f"failed to login {r.status_code } {r.text}")
-                raise Exception(f"failed to login {r.status_code } {r.text}")
+                err_msg = f"failed to login due to {r.text}"
+                self._logger.error(err_msg)
+                raise TimeplusAPIError("post", r.status_code, err_msg)
             else:
                 self._logger.debug("token has been granted")
                 self.token(r.json())
                 return self
         except Exception as e:
-            self._logger.error("failed to get token {}", e)
             raise e
 
     def logout(self):
@@ -130,7 +131,9 @@ class Env(Base):
         try:
             r = requests.get(url, timeout=self.http_timeout())
             if r.status_code < 200 or r.status_code > 299:
-                raise Exception(f"failed to show info {r.status_code } {r.text}")
+                err_msg = f"failed to show info due to {r.text}"
+                self._logger.error(err_msg)
+                raise TimeplusAPIError("get", r.status_code, err_msg)
             else:
                 return r.json()
         except Exception as e:
@@ -141,7 +144,9 @@ class Env(Base):
         try:
             r = requests.get(url, timeout=self.http_timeout())
             if r.status_code < 200 or r.status_code > 299:
-                raise Exception(f"failed to ping {r.status_code } {r.text}")
+                err_msg = f"failed to ping due to {r.text}"
+                self._logger.error(err_msg)
+                raise TimeplusAPIError("get", r.status_code, err_msg)
             else:
                 return r.json()
         except Exception as e:

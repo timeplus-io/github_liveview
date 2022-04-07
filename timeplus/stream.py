@@ -4,6 +4,7 @@ from datetime import datetime
 
 from timeplus.base import Base
 from timeplus.resource import ResourceBase
+from timeplus.error import TimeplusAPIError
 
 from timeplus.type import Type
 
@@ -97,13 +98,14 @@ class Stream(ResourceBase):
                 timeout=self._env.http_timeout(),
             )
             if r.status_code < 200 or r.status_code > 299:
-                self._logger.error(
-                    f"failed to delete {self._resource_name} {r.status_code} {r.text}"
-                )
+                err_msg = f"failed to delete {self._resource_name} due to {r.text}"
+                self._logger.error(err_msg)
+                raise TimeplusAPIError("delete", r.status_code, err_msg)
             else:
                 self._logger.debug(f"delete {self._resource_name} success")
         except Exception as e:
-            self._logger.error(f"failed to delete {self._resource_name} {e}")
+            self._logger.error(f"failed to delete {e}")
+            raise e
         finally:
             return self
 
@@ -132,11 +134,14 @@ class Stream(ResourceBase):
                 timeout=self._env.http_timeout(),
             )
             if r.status_code < 200 or r.status_code > 299:
-                self._logger.error(f"failed to insert {r.status_code} {r.text}")
+                err_msg = f"failed to insert into {self._resource_name} due to {r.text}"
+                self._logger.error(err_msg)
+                raise TimeplusAPIError("post", r.status_code, err_msg)
             else:
                 self._logger.debug("insert success")
         except Exception as e:
             self._logger.error(f"failed to insert {e}")
+            raise e
         finally:
             return self
 
