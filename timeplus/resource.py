@@ -29,15 +29,14 @@ class ResourceBase(Base):
             )
             if r.status_code < 200 or r.status_code > 299:
                 err_msg = f"failed to create {self._resource_name} due to {r.text}"
-                self._logger.error(err_msg)
                 raise TimeplusAPIError("post", r.status_code, err_msg)
             else:
                 self._logger.debug("source {} has been created", self._resource_name)
                 self._data = r.json()
+                return self
         except Exception as e:
+            self._logger.error(f"create failed {e}")
             raise e
-        finally:
-            return self
 
     def get(self):
         url = f"{self._base_url}/{self._resource_name}/{self.id()}"
@@ -50,15 +49,14 @@ class ResourceBase(Base):
             )
             if r.status_code < 200 or r.status_code > 299:
                 err_msg = f"failed to get {self._resource_name} due to {r.text}"
-                self._logger.error(err_msg)
                 raise TimeplusAPIError("get", r.status_code, err_msg)
             else:
                 self._logger.debug("get {} success", self._resource_name)
                 self._data = r.json()
+                return self
         except Exception as e:
+            self._logger.error(f"get failed {e}")
             raise e
-        finally:
-            return self
 
     def delete(self):
         url = f"{self._base_url}/{self._resource_name}/{self.id()}"
@@ -75,10 +73,10 @@ class ResourceBase(Base):
                 raise TimeplusAPIError("delete", r.status_code, err_msg)
             else:
                 self._logger.debug(f"delete {self._resource_name} success")
+                return self
         except Exception as e:
+            self._logger.error(f"delete failed {e}")
             raise e
-        finally:
-            return self
 
     def action(self, action_name):
         url = f"{self._base_url}/{self._resource_name}/{self.id()}/{action_name}"
@@ -97,10 +95,10 @@ class ResourceBase(Base):
                 raise TimeplusAPIError("post", r.status_code, err_msg)
             else:
                 self._logger.debug(f"{action_name} {self._resource_name} success")
+                return self
         except Exception as e:
+            self._logger.error(f"{action_name} failed {e}")
             raise e
-        finally:
-            return self
 
     @classmethod
     def list(cls, env=None):
@@ -115,11 +113,11 @@ class ResourceBase(Base):
             r = requests.get(url, headers=headers, timeout=env.http_timeout())
             if r.status_code < 200 or r.status_code > 299:
                 err_msg = f"failed to list {cls._resource_name} due to {r.text}"
-                env.logger().error(err_msg)
                 raise TimeplusAPIError("get", r.status_code, err_msg)
             else:
                 env.logger().debug(f"list {cls._resource_name} success")
                 result = [cls.build(val, env=env) for val in r.json()]
                 return result
         except Exception as e:
+            env.logger().error(f"list failed {e}")
             raise e

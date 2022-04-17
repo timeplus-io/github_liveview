@@ -99,15 +99,13 @@ class Stream(ResourceBase):
             )
             if r.status_code < 200 or r.status_code > 299:
                 err_msg = f"failed to delete {self._resource_name} due to {r.text}"
-                self._logger.error(err_msg)
                 raise TimeplusAPIError("delete", r.status_code, err_msg)
             else:
                 self._logger.debug(f"delete {self._resource_name} success")
+                return self
         except Exception as e:
             self._logger.error(f"failed to delete {e}")
             raise e
-        finally:
-            return self
 
     def insert(self, data, headers=None):
         url = f"{self._base_url}/{self._resource_name}/{self.name()}/ingest"
@@ -135,15 +133,13 @@ class Stream(ResourceBase):
             )
             if r.status_code < 200 or r.status_code > 299:
                 err_msg = f"failed to insert into {self._resource_name} due to {r.text}"
-                self._logger.error(err_msg)
                 raise TimeplusAPIError("post", r.status_code, err_msg)
             else:
                 self._logger.debug("insert success")
+                return self
         except Exception as e:
             self._logger.error(f"failed to insert {e}")
             raise e
-        finally:
-            return self
 
     def name(self, *args):
         return self.prop("name", *args)

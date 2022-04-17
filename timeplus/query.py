@@ -15,6 +15,7 @@ class Query(ResourceBase):
 
     def __init__(self, env=None):
         ResourceBase.__init__(self, env)
+        self.stopped = False
 
     @classmethod
     def build(cls, query, env=None):
@@ -38,7 +39,6 @@ class Query(ResourceBase):
             r = requests.post(f"{url}", json=sqlRequest, headers=headers)
             if r.status_code < 200 or r.status_code > 299:
                 err_msg = f"failed to run sql due to {r.text}"
-                env.logger.error(err_msg)
                 raise TimeplusAPIError("post", r.status_code, err_msg)
             else:
                 return r.json()
@@ -63,7 +63,6 @@ class Query(ResourceBase):
             r = requests.post(f"{url}", json=sqlRequest, headers=headers)
             if r.status_code < 200 or r.status_code > 299:
                 err_msg = f"failed to run exec due to {r.text}"
-                env.logger.error(err_msg)
                 raise TimeplusAPIError("post", r.status_code, err_msg)
             else:
                 return r.json()
@@ -102,24 +101,24 @@ class Query(ResourceBase):
         self.action("cancel")
         return self
 
+    def stop(self):
+        self.stopped = True
+
     def sink_to(self, sink):
         url = f"{self._base_url}/{self._resource_name}/{self.id()}/sinks"
         self._logger.debug(f"post {url}")
         sinkRequest = {"sink_id": sink.id()}
-
         try:
             r = requests.post(f"{url}", json=sinkRequest, headers=self._headers)
             if r.status_code < 200 or r.status_code > 299:
                 err_msg = f"failed to add sink {sink.id()} to query {self.id()} {r.status_code} {r.text}"
-                self._logger.error(err_msg)
                 raise TimeplusAPIError("post", r.status_code, err_msg)
             else:
                 self._logger.debug(f"add sink {sink.id()} to query {self.id()} success")
+                return self
         except Exception as e:
             self._logger.error(f"failed to add sink {e}")
             raise e
-        finally:
-            return self
 
     def show_query_result(self, count=10):
         ws_schema = "ws"
@@ -133,7 +132,7 @@ class Query(ResourceBase):
             self._logger.info(result)
 
     # TODO: refactor this complex method
-    def _query_op(self, stopper):  # noqa: C901
+    def _query_op(self):  # noqa: C901
         def __query_op(observer, scheduler):
             # TODO : use WebSocketApp
             ws_schema = "ws"
@@ -144,7 +143,7 @@ class Query(ResourceBase):
             )
             try:
                 while True:
-                    if stopper.is_stopped():
+                    if self.stopped:
                         break
                     result = ws.recv()
                     # convert string object to json(array)
@@ -167,17 +166,6 @@ class Query(ResourceBase):
 
         return __query_op
 
-    def get_result_stream(self, stopper):
-        strem_query_ob = rx.create(self._query_op(stopper))
+    def get_result_stream(self):
+        strem_query_ob = rx.create(self._query_op())
         return strem_query_ob
-
-
-class Stopper:
-    def __init__(self):
-        self.stopped = False
-
-    def stop(self):
-        self.stopped = True
-
-    def is_stopped(self):
-        return self.stopped

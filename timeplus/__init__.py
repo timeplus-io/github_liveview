@@ -12,7 +12,7 @@ from timeplus.generator import (  # noqa: F401
 )
 from timeplus.csv import CSVProperties, CSVSource  # noqa: F401
 from timeplus.kafka import KafkaProperties, KafkaSource, KafkaSink  # noqa: F401
-from timeplus.query import Query, Stopper  # noqa: F401
+from timeplus.query import Query  # noqa: F401
 from timeplus.sink import Sink  # noqa: F401
 from timeplus.slack import SlackSink, SlackSinkProperty  # noqa: F401
 from timeplus.smtp import SMTPSink, SMTPSinkProperty  # noqa: F401

@@ -29,15 +29,17 @@ class Env(Base):
         self.host("localhost")
         self.port("8000")
         self.schema("http")
+        self.prop("token", "")
 
-        self.auth0_domain = "timeplus.us.auth0.com"
-        self.audience("https://timeplus.us.auth0.com/api/v2/")
-        self.grant_type = "client_credentials"
+        # self.auth0_domain = "timeplus.us.auth0.com"
+        # self.audience("https://timeplus.us.auth0.com/api/v2/")
+        # self.grant_type = "client_credentials"
 
         self._headers = CaseInsensitiveDict()
         self._headers["Accept"] = "application/json"
         self._headers["Content-Type"] = "application/json"
         self._http_timeout = 10
+
         Env.add(self)
         self._logger = logger
 
@@ -72,59 +74,59 @@ class Env(Base):
     def schema(self, *args):
         return self.prop("schema", *args)
 
-    def audience(self, *args):
-        return self.prop("audience", *args)
+    # def audience(self, *args):
+    #     return self.prop("audience", *args)
 
     def base_url(self):
         return f"{self.schema()}://{self.host()}:{self.port()}/api/v1beta1"
 
     def headers(self):
-        self._headers["Authorization"] = f"Bearer {self.access_token()}"
+        self._headers["Authorization"] = f"Bearer {self.token()}"
         return self._headers
 
     def token(self, *args):
         return self.prop("token", *args)
 
-    def access_token(self, *args):
-        if "token" in self._data:
-            return self._data["token"]["access_token"]
-        return ""
+    # def access_token(self, *args):
+    #     if "token" in self._data:
+    #         return self._data["token"]["access_token"]
+    #     return ""
 
-    def login(
-        self,
-        client_id,
-        client_secret,
-    ):
-        url = f"https://{self.auth0_domain}/oauth/token"
-        self._logger.debug("post {}", url)
-        request_data = {
-            "client_id": client_id,
-            "client_secret": client_secret,
-            "audience": self.audience(),
-            "grant_type": self.grant_type,
-        }
-        headers = {"Content-Type": "application/json"}
-        try:
-            r = requests.post(
-                url,
-                json=request_data,
-                headers=headers,
-                timeout=self.http_timeout(),
-            )
-            if r.status_code < 200 or r.status_code > 299:
-                err_msg = f"failed to login due to {r.text}"
-                self._logger.error(err_msg)
-                raise TimeplusAPIError("post", r.status_code, err_msg)
-            else:
-                self._logger.debug("token has been granted")
-                self.token(r.json())
-                return self
-        except Exception as e:
-            raise e
+    # def login(
+    #     self,
+    #     client_id,
+    #     client_secret,
+    # ):
+    #     url = f"https://{self.auth0_domain}/oauth/token"
+    #     self._logger.debug("post {}", url)
+    #     request_data = {
+    #         "client_id": client_id,
+    #         "client_secret": client_secret,
+    #         "audience": self.audience(),
+    #         "grant_type": self.grant_type,
+    #     }
+    #     headers = {"Content-Type": "application/json"}
+    #     try:
+    #         r = requests.post(
+    #             url,
+    #             json=request_data,
+    #             headers=headers,
+    #             timeout=self.http_timeout(),
+    #         )
+    #         if r.status_code < 200 or r.status_code > 299:
+    #             err_msg = f"failed to login due to {r.text}"
+    #             raise TimeplusAPIError("post", r.status_code, err_msg)
+    #         else:
+    #             self.token(r.json())
+    #             self._logger.info(f"token has been granted {self.token()}")
+    #             return self
+    #     except Exception as e:
+    #         self._logger.error(f"failed to login {e}")
+    #         raise e
 
-    def logout(self):
-        self.token({})
-        return self
+    # def logout(self):
+    #     self.token({})
+    #     return self
 
     def info(self):
         url = f"{self.schema()}://{self.host()}:{self.port()}/info"

@@ -22,8 +22,8 @@ env = (
     .schema(st.secrets["TIMEPLUS_SCHEMA"])
     .host(st.secrets["TIMEPLUS_HOST"])
     .port(st.secrets["TIMEPLUS_PORT"])
-    .audience(st.secrets["TIMEPLUS_AUDIENCE"])
-    .login(st.secrets["AUTH0_API_CLIENT_ID"], st.secrets["AUTH0_API_CLIENT_SECRET"])
+    .token(st.secrets["TIMEPLUS_TOKEN"])
+    #.audience(st.secrets["TIMEPLUS_AUDIENCE"]).login(st.secrets["AUTH0_API_CLIENT_ID"], st.secrets["AUTH0_API_CLIENT_SECRET"])
 )
 Env.setCurrent(env)
 
