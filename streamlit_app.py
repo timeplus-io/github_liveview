@@ -45,11 +45,10 @@ def show_table_for_query(sql,table_name,row_cnt):
             st.session_state[name] = st.table(df)
         else:
             st.session_state[name].add_rows(df)
-    stopper = Stopper()
-    query.get_result_stream(stopper).pipe(ops.take(row_cnt)).subscribe(
+    query.get_result_stream().pipe(ops.take(row_cnt)).subscribe(
         on_next=lambda i: update_table(i,table_name),
         on_error=lambda e: print(f"error {e}"),
-        on_completed=lambda: stopper.stop(),
+        on_completed=lambda: query.stop(),
     )
     query.cancel().delete()
 
@@ -112,10 +111,9 @@ with col3:
             if (delta>0):
                 st.metric(label="Github events", value="{:,}".format(row[0]), delta=row[0]-st.session_state.last_cnt, delta_color='inverse')
                 st.session_state.last_cnt=row[0]
-        stopper = Stopper()
-        query.get_result_stream(stopper).pipe(ops.take(200)).subscribe(
+        query.get_result_stream().pipe(ops.take(200)).subscribe(
             on_next=lambda i: update_row(i),
             on_error=lambda e: print(f"error {e}"),
-            on_completed=lambda: stopper.stop(),
+            on_completed=lambda: query.stop(),
         )
         query.cancel().delete()

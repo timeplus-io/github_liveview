@@ -45,11 +45,10 @@ with st.empty():
             st.session_state.rows=0
         else:
             st.session_state[name].add_rows(df)
-    stopper = Stopper()
-    query.get_result_stream(stopper).pipe(ops.take(MAX_ROW*10-1)).subscribe(
+    query.get_result_stream().pipe(ops.take(MAX_ROW*10-1)).subscribe(
         on_next=lambda i: update_row(i,"tail"),
         on_error=lambda e: print(f"error {e}"),
-        on_completed=lambda: stopper.stop(),
+        on_completed=lambda: query.stop(),
     )
     query.cancel().delete()
 
