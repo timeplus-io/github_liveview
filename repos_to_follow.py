@@ -22,7 +22,7 @@ env = (
 )
 Env.setCurrent(env)
 
-sql="SELECT top_k(repo,10) FROM github_events SETTINGS seek_to='-10m'"
+sql="SELECT top_k(repo,10) FROM github_events EMIT LAST 6m"
 st.code(sql, language="sql")
 query = Query().sql(sql).create()
 chart_st=st.empty()
@@ -30,7 +30,7 @@ def update_row(row):
     df = pd.DataFrame(list(map(lambda f:{'repo':f[0],'events':f[1]},row[0])), columns=['repo','events'])
     with chart_st:
         st.altair_chart(alt.Chart(df).mark_bar().encode(x='events:Q',y=alt.Y('repo:N',sort='-x'),tooltip=['events','repo']), use_container_width=True)
-query.get_result_stream().pipe(ops.take(20)).subscribe(
+query.get_result_stream().pipe(ops.take(100)).subscribe(
     on_next=lambda i: update_row(i),
     on_error=lambda e: print(f"error {e}"),
     on_completed=lambda: query.stop(),
