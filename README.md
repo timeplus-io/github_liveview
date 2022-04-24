@@ -39,7 +39,8 @@ There are 2 parts of the demo
 You also need to expose Timeplus token and connections as environment variables. e.g.
 
 ```shell
-export TIMEPLUS_SCHEMA=https TIMEPLUS_HOST=acme.beta.timeplus.com TIMEPLUS_PORT=443 TIMEPLUS_TOKEN="eyJhbGciOiJSUzI1NiIsInR5cCI6Ik"
+export TIMEPLUS_SCHEMA=https TIMEPLUS_HOST=acme.beta.timeplus.com TIMEPLUS_PORT=443 \
+TIMEPLUS_TOKEN="eyJhbGciOiJSUzI1NiIsInR5cCI6Ik"
 ```
 
 Make you have Python 3.9.x installed. Install the following packages `pip install timeplus websocket-client rx loguru PyGithub`
@@ -59,5 +60,5 @@ TIMEPLUS_PORT=443
 TIMEPLUS_TOKEN="eyJhbGciOiJSUzI1NiIsInR5cCI6Ik.."
 ```
 
-Run with `streamlit run streamlit_app.py ` to show the full dashboard. You can also `streamlit run liveview.py  `  or `streamlit run repos_to_follow.py ` 
+Run with `streamlit run streamlit_app.py` to show the full dashboard. You can also run `streamlit run liveview.py  `  or `streamlit run repos_to_follow.py ` 
 
