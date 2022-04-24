@@ -40,7 +40,7 @@ You also need to expose Timeplus token and connections as environment variables.
 
 ```shell
 export TIMEPLUS_SCHEMA=https TIMEPLUS_HOST=acme.beta.timeplus.com TIMEPLUS_PORT=443 \
-TIMEPLUS_TOKEN="eyJhbGciOiJSUzI1NiIsInR5cCI6Ik"
+TIMEPLUS_TOKEN="eyJhbGciOiJSUzI1NiIsInR5cCI6Ik.."
 ```
 
 Make you have Python 3.9.x installed. Install the following packages `pip install timeplus websocket-client rx loguru PyGithub`
