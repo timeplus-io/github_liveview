@@ -21,9 +21,9 @@ env = (
     Env().schema(st.secrets["TIMEPLUS_SCHEMA"]).host(st.secrets["TIMEPLUS_HOST"]).port(st.secrets["TIMEPLUS_PORT"]).token(st.secrets["TIMEPLUS_TOKEN"])
 )
 
-st.header('Event count day over day')
+st.header('Event count: today vs yesterday (every 5min)')
 sql="""
-SELECT date_add(window_end,1d) as time,count(*) as cnt FROM tumble(table(github_events),1h) where created_at between yesterday() and today()
+SELECT date_add(window_end,1d) as time,count(*) as cnt FROM tumble(table(github_events),5m) where created_at between yesterday() and today()
 group by window_end
 """
 st.text('purple line: yesterday')
@@ -34,7 +34,7 @@ df = pd.DataFrame(result["data"], columns=col)
 c = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='cnt:Q',tooltip=['cnt',alt.Tooltip('time:T',format='%H:%M')],color=alt.value('#D53C97'))
 
 sql="""
-SELECT window_end as time,count(*) as cnt FROM tumble(table(github_events),1h)  where created_at between today() and now()
+SELECT window_end as time,count(*) as cnt FROM tumble(table(github_events),5m) where created_at between today() and now()
 group by window_end
 """
 st.text('green line: today')
