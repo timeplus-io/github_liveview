@@ -23,8 +23,8 @@ env = (
 
 st.header('Event count: today vs yesterday (every 5min)')
 sql="""
-SELECT date_add(window_end,1d) as time,count(*) as cnt FROM tumble(table(github_events),5m) where created_at between yesterday() and today()
-group by window_end
+SELECT date_add(window_end,1d) AS time,count(*) AS cnt FROM tumble(table(github_events),5m) WHERE created_at BETWEEN yesterday() AND today()
+GROUP BY window_end
 """
 st.text('purple line: yesterday')
 st.code(sql, language="sql")
@@ -34,8 +34,8 @@ df = pd.DataFrame(result["data"], columns=col)
 c = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='cnt:Q',tooltip=['cnt',alt.Tooltip('time:T',format='%H:%M')],color=alt.value('#D53C97'))
 
 sql="""
-SELECT window_end as time,count(*) as cnt FROM tumble(github_events,5m)
-group by window_end settings seek_to='2022-05-11'
+SELECT window_end AS time,count(*) AS cnt FROM tumble(github_events,5m) WHERE created_at > today()
+GROUP BY window_end SETTINGS seek_to='-1d'
 """
 query = Query().sql(sql).create()
 st.text('green line: today')
