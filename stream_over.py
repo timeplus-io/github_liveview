@@ -32,7 +32,7 @@ st.code(sql, language="sql")
 result=Query().execSQL(sql,1000)
 col = [h["name"] for h in result["header"]]
 df = pd.DataFrame(result["data"], columns=col)
-c = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='cnt:Q',tooltip=['cnt',alt.Tooltip('time:T',format='%H:%M:%S')],color=alt.value('#D53C97'))
+c = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='cnt:Q',tooltip=['cnt',alt.Tooltip('time:T',format='%H:%M')],color=alt.value('#D53C97'))
 
 sql="""
 SELECT window_end AS time,count(*) AS cnt FROM tumble(github_events,5s) WHERE _tp_time > to_start_of_hour(now())
@@ -47,7 +47,7 @@ def update_row(row):
     rows.append(row)
     col = [h["name"] for h in result["header"]]
     df = pd.DataFrame(rows, columns=col)
-    c2 = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='cnt:Q',tooltip=['cnt',alt.Tooltip('time:T',format='%H:%M:%S')],color=alt.value('#52FFDB'))
+    c2 = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='cnt:Q',tooltip=['cnt',alt.Tooltip('time:T',format='%H:%M')],color=alt.value('#52FFDB'))
     with chart_st:
         st.altair_chart(c+c2, use_container_width=True)
 query.get_result_stream().pipe(ops.take(600)).subscribe(
