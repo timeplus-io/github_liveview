@@ -33,7 +33,7 @@ def show_table_for_query(sql,table_name,row_cnt):
             data[f] = row[i]
             #hack show first column as more friendly datetime diff
             if(i==0):
-                minutes=divmod((pytz.utc.localize(datetime.datetime.utcnow())-row[i]).total_seconds(),60)
+                minutes=divmod((datetime.datetime.utcnow()-datetime.datetime.strptime(row[i],"%Y-%m-%dT%H:%M:%S")).total_seconds(),60)
                 data[f]=f"{int(minutes[0])} min {int(minutes[1])} sec ago"
 
         df = pd.DataFrame([data], columns=col)
@@ -69,7 +69,7 @@ with col2:
     #show_table_for_query("""SELECT created_at,actor,repo,json_extract_string(payload,'master_branch') AS branch \nFROM github_events WHERE type='CreateEvent'""",'new_repo',3)
     
     st.header('Default branch for new repos')
-    sql="""SELECT json_extract_string(payload,'master_branch') AS branch,count(*) AS cnt
+    sql="""SELECT payload:master_branch AS branch,count(*) AS cnt
 FROM table(github_events) WHERE _tp_time>date_sub(now(),1h) AND type='CreateEvent' 
 GROUP BY branch ORDER BY cnt DESC LIMIT 3"""
     st.code(sql, language="sql")
