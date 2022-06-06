@@ -18,9 +18,10 @@ with col_link:
     st.markdown("[Source Code](https://github.com/timeplus-io/github_liveview/blob/develop/streamlit_app.py) | [Real-time Events](https://share.streamlit.io/timeplus-io/github_liveview/develop/liveview.py) | [About Timeplus](https://timeplus.com)", unsafe_allow_html=True)
 
 env = (
-    Env().schema(st.secrets["TIMEPLUS_SCHEMA"]).host(st.secrets["TIMEPLUS_HOST"]).port(st.secrets["TIMEPLUS_PORT"]).token(st.secrets["TIMEPLUS_TOKEN"])
+    Env().schema(st.secrets["TIMEPLUS_SCHEMA"]).host(st.secrets["TIMEPLUS_HOST"]).port(st.secrets["TIMEPLUS_PORT"])
+    .token(st.secrets["TIMEPLUS_TOKEN"])
+    .audience(st.secrets["TIMEPLUS_AUDIENCE"]).client_id("TIMEPLUS_CLIENT_ID").client_secret("TIMEPLUS_CLIENT_SECRET")
 )
-Env.setCurrent(env)
 
 def show_table_for_query(sql,table_name,row_cnt):
     st.code(sql, language="sql")

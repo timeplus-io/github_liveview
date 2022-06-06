@@ -16,9 +16,10 @@ with col_link:
     st.markdown("[Source Code](https://github.com/timeplus-io/github_liveview/blob/develop/liveview.py) | [Full Dashboard](https://share.streamlit.io/timeplus-io/github_liveview/develop/streamlit_app.py) | [Repos to Follow](https://share.streamlit.io/timeplus-io/github_liveview/develop/repos_to_follow.py) | [About Timeplus](https://timeplus.com)", unsafe_allow_html=True)
     
 env = (
-    Env().schema(st.secrets["TIMEPLUS_SCHEMA"]).host(st.secrets["TIMEPLUS_HOST"]).port(st.secrets["TIMEPLUS_PORT"]).token(st.secrets["TIMEPLUS_TOKEN"])
+    Env().schema(st.secrets["TIMEPLUS_SCHEMA"]).host(st.secrets["TIMEPLUS_HOST"]).port(st.secrets["TIMEPLUS_PORT"])
+    .token(st.secrets["TIMEPLUS_TOKEN"])
+    .audience(st.secrets["TIMEPLUS_AUDIENCE"]).client_id("TIMEPLUS_CLIENT_ID").client_secret("TIMEPLUS_CLIENT_SECRET")
 )
-Env.setCurrent(env)
 
 MAX_ROW=10
 st.session_state.rows=0
@@ -31,9 +32,9 @@ with st.empty():
         data = {}
         for i, f in enumerate(col):
             data[f] = row[i]
-            #hack show first column as more friendly datetime diff
+            #hack show first column as more friendly datetime diff, 2022-06-06T21:15:11
             if(i==0):
-                minutes=divmod((pytz.utc.localize(datetime.datetime.utcnow())-row[i]).total_seconds(),60)
+                minutes=divmod((datetime.datetime.utcnow()-datetime.datetime.strptime(row[i],"%Y-%m-%dT%H:%M:%S")).total_seconds(),60)
                 data[f]=f"{row[i]} ({int(minutes[0])} min {int(minutes[1])} sec ago)"
 
         df = pd.DataFrame([data], columns=col)

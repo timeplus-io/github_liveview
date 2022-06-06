@@ -18,7 +18,9 @@ with col_link:
     st.markdown("[Source Code](https://github.com/timeplus-io/github_liveview/blob/develop/stream_over.py) | [About Timeplus](https://timeplus.com)", unsafe_allow_html=True)
 
 env = (
-    Env().schema(st.secrets["TIMEPLUS_SCHEMA"]).host(st.secrets["TIMEPLUS_HOST"]).port(st.secrets["TIMEPLUS_PORT"]).token(st.secrets["TIMEPLUS_TOKEN"])
+    Env().schema(st.secrets["TIMEPLUS_SCHEMA"]).host(st.secrets["TIMEPLUS_HOST"]).port(st.secrets["TIMEPLUS_PORT"])
+    .token(st.secrets["TIMEPLUS_TOKEN"])
+    .audience(st.secrets["TIMEPLUS_AUDIENCE"]).client_id("TIMEPLUS_CLIENT_ID").client_secret("TIMEPLUS_CLIENT_SECRET")
 )
 
 st.header('Event count: today vs yesterday (every 5sec)')
