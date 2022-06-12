@@ -25,25 +25,25 @@ env = (
 
 st.header('Event count: today vs yesterday (every 5sec)')
 sql="""
-SELECT date_add(window_end,1d) AS time,count(*) AS cnt FROM tumble(table(github_events),5s) 
-WHERE _tp_time BETWEEN date_sub(to_start_of_hour(now()),24h) AND date_sub(to_start_of_hour(now()),23h)
-GROUP BY window_end
+with cte as(select group_array(time) as timeArray, moving_sum(cnt) as cntArray from (SELECT date_add(window_end,1d) AS time,count(*) AS cnt FROM tumble(table(github_events),1m) WHERE _tp_time BETWEEN date_sub(to_start_of_hour(now()),24h) AND date_sub(to_start_of_hour(now()),23h) GROUP BY window_end ORDER BY time))select t.1 as time, t.2 as cnt from (select array_join(array_zip(timeArray,cntArray)) as t from cte)
 """
 st.text('purple line: yesterday')
 st.code(sql, language="sql")
-result=Query().execSQL(sql,1000)
+sql2="""
+with cte as (select group_array(time) as timeArray,moving_sum(cnt) as cntArray from(SELECT window_end AS time,count(*) AS cnt FROM tumble(github_events,5s) WHERE _tp_time > to_start_of_hour(now()) GROUP BY window_end SETTINGS seek_to='-1h'))select t.1 as time, t.2 as cnt from (select array_join(array_zip(timeArray,cntArray)) as t from cte)
+"""
+query = Query().sql(sql2).create()
+st.text('green line: today')
+st.code(sql2, language="sql")
+
+result=Query().execSQL(sql)
 col = [h["name"] for h in result["header"]]
 df = pd.DataFrame(result["data"], columns=col)
 c = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='cnt:Q',tooltip=['cnt',alt.Tooltip('time:T',format='%H:%M')],color=alt.value('#D53C97'))
-
-sql="""
-SELECT window_end AS time,count(*) AS cnt FROM tumble(github_events,5s) WHERE _tp_time > to_start_of_hour(now())
-GROUP BY window_end SETTINGS seek_to='-1h'
-"""
-query = Query().sql(sql).create()
-st.text('green line: today')
-st.code(sql, language="sql")
 chart_st=st.empty()
+with chart_st:
+    st.altair_chart(c, use_container_width=True)
+
 rows=[]
 def update_row(row):
     try:
