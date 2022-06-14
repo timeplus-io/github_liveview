@@ -23,33 +23,29 @@ env = (
     .audience(st.secrets["TIMEPLUS_AUDIENCE"]).client_id("TIMEPLUS_CLIENT_ID").client_secret("TIMEPLUS_CLIENT_SECRET")
 )
 
-st.header('Event count: today vs yesterday (every 5sec)')
-sql_yesterday="""
-with cte as(select group_array(time) as timeArray, moving_sum(cnt) as cntArray from (SELECT date_add(window_end,1d) AS time,count(*) AS cnt FROM tumble(table(github_events),1h) WHERE _tp_time BETWEEN yesterday() AND to_start_of_day(now()) GROUP BY window_end ORDER BY time))select t.1 as time, t.2 as cnt from (select array_join(array_zip(timeArray,cntArray)) as t from cte)
+st.header('Event count: today vs yesterday')
+sql_yesterday="""WITH cte AS( SELECT group_array(time) AS timeArray, moving_sum(cnt) AS cntArray FROM 
+      (SELECT date_add(window_end,1d) AS time,count(*) AS cnt FROM tumble(table(github_events),10s) WHERE _tp_time BETWEEN date_sub(now(),1446m) AND date_sub(now(),1436m) GROUP BY window_end ORDER BY time))
+SELECT t.1 AS time, t.2 AS cnt FROM (SELECT array_join(array_zip(timeArray,cntArray)) AS t FROM cte)
 """
 st.markdown('<font color=#D53C97>purple line: yesterday</font>',unsafe_allow_html=True)
 st.code(sql_yesterday, language="sql")
-sql2="""
-with cte as (select group_array(time) as timeArray,moving_sum(cnt) as cntArray from(SELECT window_end AS time,count(*) AS cnt FROM tumble(github_events,5s) GROUP BY window_end))select t.1 as time, t.2 as cnt from (select array_join(array_zip(timeArray,cntArray)) as t from cte)
+sql2="""SELECT group_array(time) AS timeArray,moving_sum(cnt) AS cntArray FROM (SELECT window_end AS time,count(*) AS cnt FROM tumble(github_events,1s) GROUP BY window_end)
 """
 st.markdown('<font color=#52FFDB>green line: today</font>',unsafe_allow_html=True)
 st.code(sql2, language="sql")
 
 # draw line for yesterday, 24 hours
-result=Query().execSQL(sql_yesterday)
+result=Query().execSQL(sql_yesterday,100000)
 col = [h["name"] for h in result["header"]]
 df = pd.DataFrame(result["data"], columns=col)
 chart_yesterday = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='cnt:Q',tooltip=['cnt',alt.Tooltip('time:T',format='%H:%M')],color=alt.value('#D53C97'))
 
 # draw half line for today
-sql_today_til_now="""
-with cte as(select group_array(time) as timeArray, moving_sum(cnt) as cntArray from (SELECT window_end AS time,count(*) AS cnt FROM tumble(table(github_events),1h) WHERE _tp_time > to_start_of_day(now()) GROUP BY window_end ORDER BY time))select t.1 as time, t.2 as cnt from (select array_join(array_zip(timeArray,cntArray)) as t from cte)
-"""
-result=Query().execSQL(sql_today_til_now)
-col = [h["name"] for h in result["header"]]
-df = pd.DataFrame(result["data"], columns=col)
-# cache the last count in this result
-last_cnt=3000000
+sql_today_til_now="""with cte as(select group_array(time) as timeArray, moving_sum(cnt) as cntArray from (SELECT window_end AS time,count(*) AS cnt FROM tumble(table(github_events),10s) WHERE _tp_time > date_sub(now(),6m) GROUP BY window_end ORDER BY time))select t.1 as time, t.2 as cnt from (select array_join(array_zip(timeArray,cntArray)) as t from cte)"""
+result=Query().execSQL(sql_today_til_now,1000000)
+result_data=result["data"]
+df = pd.DataFrame(result_data, columns=['time','cnt'])
 chart_today_til_now = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='cnt:Q',tooltip=['cnt',alt.Tooltip('time:T',format='%H:%M')],color=alt.value('#52FFDB'))
 
 chart_st=st.empty()
@@ -57,17 +53,16 @@ with chart_st:
     st.altair_chart(chart_yesterday+chart_today_til_now, use_container_width=True)
 
 # draw second half of the line for upcoming data
-sql2=f"""
-with cte as (select group_array(time) as timeArray,moving_sum(cnt) as cntArray from(SELECT window_end AS time,count(*) AS cnt FROM tumble(github_events,5s) GROUP BY window_end))select t.1 as time, t.2+{last_cnt} as cnt from (select array_join(array_zip(timeArray,cntArray)) as t from cte)
-"""
+# cache the last count in this result
+last_cnt=result_data.pop()[1]
 query = Query().sql(sql2).create()
-rows=[]
 def update_row(row):
     try:
-        rows.append(row)
-        col = [h["name"] for h in result["header"]]
-        df = pd.DataFrame(rows, columns=col)
-        chart_live = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='cnt:Q',tooltip=['cnt',alt.Tooltip('time:T',format='%H:%M')],color=alt.value('#664CFC'))
+        rows=[]
+        for i in range(len(row[0])):
+            rows.append([row[0][i],row[1][i]+last_cnt])
+        df = pd.DataFrame(rows, columns=['time','cnt'])
+        chart_live = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='cnt:Q',tooltip=['cnt',alt.Tooltip('time:T',format='%H:%M')],color=alt.value('#52FFDB'))
         with chart_st:
             st.altair_chart(chart_yesterday+chart_today_til_now+chart_live, use_container_width=True)
     except BaseException as err:
