@@ -30,7 +30,7 @@ SELECT t.1 AS time, t.2 AS cnt FROM (SELECT array_join(array_zip(timeArray,cntAr
 """
 st.markdown('<font color=#D53C97>purple line: yesterday</font>',unsafe_allow_html=True)
 st.code(sql_yesterday, language="sql")
-sql2="""SELECT group_array(time) AS timeArray,moving_sum(cnt) AS cntArray FROM (SELECT window_end AS time,count(*) AS cnt FROM tumble(github_events,1s) GROUP BY window_end)
+sql2="""SELECT group_array(time),moving_sum(cnt) FROM (SELECT window_end AS time,count(*) AS cnt FROM tumble(github_events,1s) GROUP BY window_end)
 """
 st.markdown('<font color=#52FFDB>green line: today</font>',unsafe_allow_html=True)
 st.code(sql2, language="sql")
