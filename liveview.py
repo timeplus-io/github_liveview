@@ -16,9 +16,7 @@ with col_link:
     st.markdown("[Source Code](https://github.com/timeplus-io/github_liveview/blob/develop/liveview.py) | [Full Dashboard](https://share.streamlit.io/timeplus-io/github_liveview/develop/streamlit_app.py) | [Repos to Follow](https://share.streamlit.io/timeplus-io/github_liveview/develop/repos_to_follow.py) | [About Timeplus](https://timeplus.com)", unsafe_allow_html=True)
     
 env = (
-    Env().schema(st.secrets["TIMEPLUS_SCHEMA"]).host(st.secrets["TIMEPLUS_HOST"]).port(st.secrets["TIMEPLUS_PORT"])
-    .token(st.secrets["TIMEPLUS_TOKEN"])
-    .audience(st.secrets["TIMEPLUS_AUDIENCE"]).client_id("TIMEPLUS_CLIENT_ID").client_secret("TIMEPLUS_CLIENT_SECRET")
+    Env().schema(st.secrets["TIMEPLUS_SCHEMA"]).host(st.secrets["TIMEPLUS_HOST"]).port(st.secrets["TIMEPLUS_PORT"]).api_key(st.secrets["TIMEPLUS_API_KEY"])
 )
 
 MAX_ROW=10

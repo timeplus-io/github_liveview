@@ -4,19 +4,20 @@ from github import (Github,enable_console_debug_logging,GithubException,RateLimi
 from timeplus import (Env,Stream,StreamColumn)
 from timeplus.error import TimeplusAPIError
 
+# Note, this script is no longer used. We now collect github events and push to Confluent Cloud
+
 def log(msg):
     print(f"{datetime.datetime.now()} {msg}")
 
 tp_schema = os.environ.get("TIMEPLUS_SCHEMA")
 tp_host = os.environ.get("TIMEPLUS_HOST")
 tp_port = os.environ.get("TIMEPLUS_PORT")
-tp_token = os.environ.get("TIMEPLUS_TOKEN")
+tp_apikey = os.environ.get("TIMEPLUS_API_KEY")
 
 def login_tp():
     env = (
-        Env().schema(tp_schema).host(tp_host).port(tp_port).token(tp_token)
+        Env().schema(tp_schema).host(tp_host).port(tp_port).api_key(tp_apikey)
     )
-    Env.setCurrent(env)
     return
 login_tp()
 try:

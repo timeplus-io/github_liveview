@@ -18,9 +18,7 @@ with col_link:
     st.markdown("[Source Code](https://github.com/timeplus-io/github_liveview/blob/develop/stream_over.py) | [About Timeplus](https://timeplus.com)", unsafe_allow_html=True)
 
 env = (
-    Env().schema(st.secrets["TIMEPLUS_SCHEMA"]).host(st.secrets["TIMEPLUS_HOST"]).port(st.secrets["TIMEPLUS_PORT"])
-    .token(st.secrets["TIMEPLUS_TOKEN"])
-    .audience(st.secrets["TIMEPLUS_AUDIENCE"]).client_id("TIMEPLUS_CLIENT_ID").client_secret("TIMEPLUS_CLIENT_SECRET")
+    Env().schema(st.secrets["TIMEPLUS_SCHEMA"]).host(st.secrets["TIMEPLUS_HOST"]).port(st.secrets["TIMEPLUS_PORT"]).api_key(st.secrets["TIMEPLUS_API_KEY"])
 )
 
 st.header('Event count: today vs yesterday')
@@ -42,7 +40,7 @@ df = pd.DataFrame(result["data"], columns=col)
 chart_yesterday = alt.Chart(df).mark_line(point=alt.OverlayMarkDef()).encode(x='time:T',y='cnt:Q',tooltip=['cnt',alt.Tooltip('time:T',format='%H:%M')],color=alt.value('#D53C97'))
 
 # draw half line for today
-sql_today_til_now="""with cte as(select group_array(time) as timeArray, moving_sum(cnt) as cntArray from (SELECT window_end AS time,count(*) AS cnt FROM tumble(table(github_events),10s) WHERE _tp_time > date_sub(now(),6m) GROUP BY window_end ORDER BY time))select t.1 as time, t.2 as cnt from (select array_join(array_zip(timeArray,cntArray)) as t from cte)"""
+sql_today_til_now="""WITH cte AS(SELECT group_array(time) AS timeArray, moving_sum(cnt) AS cntArray FROM (SELECT window_end AS time,count(*) AS cnt FROM tumble(table(github_events),10s) WHERE _tp_time > date_sub(now(),6m) GROUP BY window_end ORDER BY time))SELECT t.1 AS time, t.2 AS cnt FROM (SELECT array_join(array_zip(timeArray,cntArray)) AS t FROM cte)"""
 result=Query().execSQL(sql_today_til_now,1000000)
 result_data=result["data"]
 df = pd.DataFrame(result_data, columns=['time','cnt'])
